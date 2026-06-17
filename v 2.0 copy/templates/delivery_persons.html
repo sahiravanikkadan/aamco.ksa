@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Delivery Persons - AAMCO{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-person-badge"></i> Delivery Persons</h4>
+    <a href="{{ url_for('add_delivery_person') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Delivery Person</a>
+</div>
+
+<!-- Delivery Person Cards -->
+<div class="row g-3">
+    {% for p in persons %}
+    <div class="col-12">
+        <div class="card shadow-sm border-0 list-row" role="button" style="border-radius:12px;cursor:pointer;transition:all 0.2s;"
+             data-bs-toggle="modal" data-bs-target="#personModal{{ p.id }}">
+            <div class="card-body py-3 px-4">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3"
+                                 style="width:45px;height:45px;background:linear-gradient(135deg,#1a73e8,#0a4da6);color:white;font-size:1.1rem;flex-shrink:0;">
+                                {{ p.name[:1] }}
+                            </div>
+                            <div>
+                                <div class="fw-bold">{{ p.name }}</div>
+                                <small class="text-muted">ID: {{ p.id }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted d-block">Mobile</small>
+                        <span class="fw-semibold">{{ p.mobile or '-' }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted d-block">Iqama ID</small>
+                        <span class="fw-semibold">{{ p.iqama_id or '-' }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted d-block">Vehicle</small>
+                        <span class="fw-semibold">{{ p.vehicle_no or '-' }}</span>
+                        {% if p.vehicle_type %}<br><small class="text-muted">{{ p.vehicle_type }}</small>{% endif %}
+                    </div>
+                    <div class="col-md-1">
+                        <small class="text-muted d-block">Care Of</small>
+                        <span class="fw-semibold" style="font-size:0.85rem;">{{ p.care_of or '-' }}</span>
+                    </div>
+                    <div class="col-md-1 text-center">
+                        <small class="text-muted d-block">Status</small>
+                        {% if p.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <small class="text-muted d-block">Added</small>
+                        <span class="fw-semibold">{{ p.created_at[:10] if p.created_at else '-' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal fade" id="personModal{{ p.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content border-0" style="border-radius:16px;overflow:hidden;">
+                <div class="modal-header py-3" style="background:linear-gradient(135deg,#1a73e8 0%,#0a4da6 100%);">
+                    <h5 class="modal-title text-white">
+                        <i class="bi bi-person-badge me-2"></i>{{ p.name }}
+                        {% if p.is_active %}
+                        <span class="badge bg-success ms-2">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary ms-2">Inactive</span>
+                        {% endif %}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="p-3 rounded-3" style="background:#f8fafc;">
+                        <h6 class="text-muted mb-3"><i class="bi bi-person-fill text-primary me-1"></i>Driver Details</h6>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Name</span>
+                            <strong>{{ p.name }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Mobile</span>
+                            <strong>{{ p.mobile or '-' }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Iqama ID</span>
+                            <strong>{{ p.iqama_id or '-' }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Vehicle No</span>
+                            <strong>{{ p.vehicle_no or '-' }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Vehicle Type</span>
+                            <strong>{{ p.vehicle_type or '-' }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Care Of</span>
+                            <strong>{{ p.care_of or '-' }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Added</span>
+                            <strong>{{ p.created_at[:10] if p.created_at else '-' }}</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    {% if p.mobile %}
+                    <button type="button" class="btn btn-success" onclick="openWAShare('{{ p.mobile }}', '{{ p.name }}', 'Delivery Driver', [{label:'Name',value:'{{ p.name }}'},{label:'Mobile',value:'{{ p.mobile or "-" }}'},{label:'Iqama ID',value:'{{ p.iqama_id or "-" }}'},{label:'Vehicle',value:'{{ p.vehicle_no or "-" }}'},{label:'Status',value:'{{ "Active" if p.is_active else "Inactive" }}'}], '🚗')">
+                        <i class="bi bi-whatsapp me-1"></i>Share
+                    </button>
+                    {% endif %}
+                    <a href="{{ url_for('edit_delivery_person', person_id=p.id) }}" class="btn btn-primary">
+                        <i class="bi bi-pencil-square me-1"></i>Edit
+                    </a>
+                    {% if current_user.is_admin() %}
+                    <a href="{{ url_for('delete_delivery_person', person_id=p.id) }}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="card shadow-sm border-0 text-center py-5" style="border-radius:12px;">
+            <div class="card-body">
+                <i class="bi bi-person-badge text-muted" style="font-size:3rem;"></i>
+                <p class="text-muted mt-2 mb-3">No delivery persons found</p>
+                <a href="{{ url_for('add_delivery_person') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Delivery Person</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+.list-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(26, 115, 232, 0.15) !important;
+    border-left: 4px solid #1a73e8 !important;
+}
+</style>
+{% endblock %}

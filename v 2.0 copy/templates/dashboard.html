@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - TaskFlow{% endblock %}
+{% block content %}
+<section class="page-hero">
+    <div class="page-hero-content">
+        <div class="eyebrow"><i class="bi bi-speedometer2"></i> Operations Dashboard</div>
+        <h1>Clear visibility across work, people, and fleet activity.</h1>
+        <p>The dashboard now highlights the numbers that need attention first, with cleaner grouping and quicker paths into each operational area.</p>
+        <div class="hero-meta">
+            <div class="hero-chip"><i class="bi bi-list-task"></i> {{ total_tasks }} tracked tasks</div>
+            <div class="hero-chip"><i class="bi bi-truck"></i> {{ total_deliveries }} deliveries logged</div>
+            <div class="hero-chip"><i class="bi bi-people"></i> {{ total_employees }} active employees</div>
+            <div class="hero-chip"><i class="bi bi-car-front"></i> {{ total_vehicles }} managed vehicles</div>
+        </div>
+    </div>
+</section>
+
+<section class="welcome-strip glass-panel">
+    <div class="welcome-profile">
+        <div class="welcome-avatar">
+            {% if current_user.profile_pic %}
+            <img src="{{ url_for('static', filename='uploads/' + current_user.profile_pic) }}" alt="Profile">
+            {% else %}
+            <i class="bi bi-person-fill fs-3 text-primary"></i>
+            {% endif %}
+        </div>
+        <div>
+            <div class="welcome-title">{{ current_user.full_name }}</div>
+            <div class="welcome-note">
+                {{ current_user.role | replace('_', ' ') | title }}
+                {% if current_user.email %}
+                <span class="mx-2">•</span>{{ current_user.email }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="soft-badge"><i class="bi bi-broadcast-pin"></i> Live workspace overview</div>
+</section>
+
+<section class="dashboard-section">
+    <div class="section-heading">
+        <h5><i class="bi bi-list-task me-2"></i>Task Overview</h5>
+    </div>
+    <div class="stat-grid">
+        <div class="stat-span-3">
+            <div class="card stat-card" onclick="location.href='{{ url_for('tasks') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">Tasks</div>
+                            <div class="stat-number">{{ total_tasks }}</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-clipboard-data"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">All recorded work items across teams.</div>
+                        <div class="stat-trend"><i class="bi bi-arrow-up-right"></i> Open task center</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stat-span-3">
+            <div class="card stat-card accent-warning" onclick="location.href='{{ url_for('tasks', status='pending') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">Pending</div>
+                            <div class="stat-number">{{ pending_tasks }}</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">Waiting for action or assignment.</div>
+                        <div class="stat-trend"><i class="bi bi-hourglass-split"></i> Needs follow-up</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stat-span-3">
+            <div class="card stat-card accent-info" onclick="location.href='{{ url_for('tasks', status='in_progress') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">In Progress</div>
+                            <div class="stat-number">{{ in_progress_tasks }}</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-arrow-repeat"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">Currently moving through execution.</div>
+                        <div class="stat-trend"><i class="bi bi-lightning-charge"></i> Active now</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stat-span-3">
+            <div class="card stat-card accent-success" onclick="location.href='{{ url_for('tasks', status='completed') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">Completed</div>
+                            <div class="stat-number">{{ completed_tasks }}</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">Finished items closed successfully.</div>
+                        <div class="stat-trend"><i class="bi bi-graph-up-arrow"></i> Delivery momentum</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-section">
+    <div class="section-heading">
+        <h5><i class="bi bi-truck me-2"></i>Delivery Overview</h5>
+    </div>
+    <div class="stat-grid">
+        <div class="stat-span-4">
+            <div class="card stat-card" onclick="location.href='{{ url_for('deliveries') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">Deliveries</div>
+                            <div class="stat-number">{{ total_deliveries }}</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">All transport records and note tracking.</div>
+                        <div class="stat-trend"><i class="bi bi-arrow-up-right"></i> Open deliveries</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stat-span-4">
+            <div class="card stat-card accent-danger" onclick="location.href='{{ url_for('deliveries', payment='unpaid') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">Unpaid Charges</div>
+                            <div class="stat-number">{{ pending_payments }}</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">Outstanding transportation payments.</div>
+                        <div class="stat-trend"><i class="bi bi-exclamation-circle"></i> Requires follow-up</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stat-span-4">
+            <div class="card stat-card accent-warning" onclick="location.href='{{ url_for('deliveries', note_status='pending') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">Pending Notes</div>
+                            <div class="stat-number">{{ pending_notes }}</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-file-earmark-text"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">Signed notes still waiting to return.</div>
+                        <div class="stat-trend"><i class="bi bi-journal-check"></i> Reconcile paperwork</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-section">
+    <div class="section-heading">
+        <h5><i class="bi bi-people-fill me-2"></i>HR Overview</h5>
+    </div>
+    <div class="stat-grid">
+        <div class="stat-span-4">
+            <div class="card stat-card" onclick="location.href='{{ url_for('hr_employees') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">Employees</div>
+                            <div class="stat-number">{{ total_employees }}</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-person-vcard"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">Active employee records in HR.</div>
+                        <div class="stat-trend"><i class="bi bi-people"></i> Open employee list</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stat-span-4">
+            <div class="card stat-card accent-warning" onclick="location.href='{{ url_for('hr_leaves', status='pending') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">Pending Vacations</div>
+                            <div class="stat-number">{{ pending_leaves }}</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">Leave requests awaiting review.</div>
+                        <div class="stat-trend"><i class="bi bi-alarm"></i> Review queue</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stat-span-4">
+            <div class="card stat-card accent-info" onclick="location.href='{{ url_for('hr_leaves') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">Leave Tools</div>
+                            <div class="stat-number"><i class="bi bi-arrow-right"></i></div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-calculator"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">Open the leave salary and vacation workflow.</div>
+                        <div class="stat-trend"><i class="bi bi-compass"></i> Go to calculator</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-section">
+    <div class="section-heading">
+        <h5><i class="bi bi-car-front me-2"></i>Vehicle Document Overview</h5>
+    </div>
+    <div class="stat-grid">
+        <div class="stat-span-4">
+            <div class="card stat-card" onclick="location.href='{{ url_for('vehicles') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">Vehicles</div>
+                            <div class="stat-number">{{ total_vehicles }}</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-car-front"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">Current fleet and document registry.</div>
+                        <div class="stat-trend"><i class="bi bi-arrow-up-right"></i> Open vehicle list</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stat-span-4">
+            <div class="card stat-card accent-danger" onclick="location.href='{{ url_for('vehicles_expiring') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">Expired Docs</div>
+                            <div class="stat-number">{{ expired_docs }}</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">Already expired items requiring renewal.</div>
+                        <div class="stat-trend"><i class="bi bi-exclamation-octagon"></i> Urgent action</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stat-span-4">
+            <div class="card stat-card accent-warning" onclick="location.href='{{ url_for('vehicles_expiring') }}'">
+                <div class="card-body">
+                    <div class="stat-topline">
+                        <div>
+                            <div class="stat-kicker">Expiring Soon</div>
+                            <div class="stat-number">{{ expiring_docs }}</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                    </div>
+                    <div>
+                        <div class="stat-description">Upcoming renewals that need planning.</div>
+                        <div class="stat-trend"><i class="bi bi-calendar-range"></i> Prepare renewals</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="row g-4">
+    <!-- Recent Tasks -->
+    <div class="col-lg-6">
+        <div class="card dashboard-table">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">Recent Tasks</h6>
+                <a href="{{ url_for('tasks') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr><th>Task</th><th>Assigned To</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for task in recent_tasks %}
+                            <tr>
+                                <td>{{ task.title }}</td>
+                                <td>{{ task.assigned_name or 'Unassigned' }}</td>
+                                <td>
+                                    {% if task.status == 'completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                    {% elif task.status == 'in_progress' %}
+                                        <span class="badge bg-info">In Progress</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="text-center text-muted py-3">No tasks yet</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Deliveries -->
+    <div class="col-lg-6">
+        <div class="card dashboard-table">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">Recent Deliveries</h6>
+                <a href="{{ url_for('deliveries') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr><th>Note #</th><th>Customer</th><th>Payment</th><th>Signed Note</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for d in recent_deliveries %}
+                            <tr>
+                                <td>{{ d.delivery_note_number }}</td>
+                                <td>{{ d.customer_name }}</td>
+                                <td>
+                                    {% if d.charge_paid %}
+                                        <span class="badge bg-success">Paid</span>
+                                    {% elif d.amount_paid and d.amount_paid > 0 %}
+                                        <span class="badge bg-warning text-dark">Partial</span>
+                                    {% elif d.transportation_charge > 0 %}
+                                        <span class="badge bg-danger">Unpaid</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if d.signed_note_status == 'received' %}
+                                        <span class="badge bg-success">Received</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-center text-muted py-3">No deliveries yet</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

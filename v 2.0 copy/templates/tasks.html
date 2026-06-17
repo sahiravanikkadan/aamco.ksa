@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% block title %}Tasks - TaskFlow{% endblock %}
+{% block content %}
+<div class="print-header">
+    {% if app_settings.get('print_show_logo', '1') == '1' %}
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+    {% endif %}
+    <h5>{{ app_settings.get('print_company_name', 'AIRSCENT ARABIA MANUFACTURING CO.') }}</h5>
+    <div class="text-muted" style="font-size:9pt;">Task List — Printed: {{ now().strftime('%Y-%m-%d %H:%M') if now is defined else '' }}</div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <h4 class="mb-0"><i class="bi bi-list-task"></i> Tasks</h4>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-outline-secondary"><i class="bi bi-printer"></i> Print</button>
+        <a href="{{ url_for('export_tasks', status=status_filter, priority=priority_filter, user=user_filter) }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Export</a>
+        <a href="{{ url_for('add_task') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Task</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm border-0 mb-4 no-print">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="pending" {{ 'selected' if status_filter == 'pending' }}>Pending</option>
+                    <option value="accepted" {{ 'selected' if status_filter == 'accepted' }}>Accepted</option>
+                    <option value="in_progress" {{ 'selected' if status_filter == 'in_progress' }}>In Progress</option>
+                    <option value="completed" {{ 'selected' if status_filter == 'completed' }}>Completed</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Priority</label>
+                <select name="priority" class="form-select">
+                    <option value="">All Priorities</option>
+                    <option value="high" {{ 'selected' if priority_filter == 'high' }}>High</option>
+                    <option value="medium" {{ 'selected' if priority_filter == 'medium' }}>Medium</option>
+                    <option value="low" {{ 'selected' if priority_filter == 'low' }}>Low</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Group</label>
+                <select name="group" class="form-select">
+                    <option value="">All Groups</option>
+                    {% for g in groups %}
+                    <option value="{{ g.id }}" {{ 'selected' if group_filter == g.id|string }}>{{ g.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if current_user.is_admin() %}
+            <div class="col-md-2">
+                <label class="form-label">Assigned To</label>
+                <select name="user" class="form-select">
+                    <option value="">All Users</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}" {{ 'selected' if user_filter == u.id|string }}>{{ u.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-funnel"></i></button>
+            </div>
+            <div class="col-md-1">
+                <a href="{{ url_for('tasks') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Task Cards -->
+<div class="row g-3">
+    {% for task in tasks %}
+    <div class="col-12">
+        <div class="card shadow-sm border-0 list-row" role="button" style="border-radius:12px;cursor:pointer;transition:all 0.2s;"
+             data-bs-toggle="modal" data-bs-target="#taskModal{{ task.id }}">
+            <div class="card-body py-3 px-4">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3"
+                                 style="width:45px;height:45px;background:linear-gradient(135deg,{% if task.priority == 'high' %}#dc3545,#b02a37{% elif task.priority == 'medium' %}#ffc107,#e0a800{% else %}#6c757d,#545b62{% endif %});color:white;font-size:0.85rem;flex-shrink:0;">
+                                <i class="bi bi-clipboard-check"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold">{{ task.title }}</div>
+                                <small class="text-muted">#{{ task.id }} · {{ task.creator_name }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted d-block">Assigned To</small>
+                        <span class="fw-semibold">{{ task.assigned_name or 'Unassigned' }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted d-block">Group</small>
+                        {% if task.group_name %}
+                        <span class="badge" style="background-color:{{ task.group_color or '#6c757d' }};">{{ task.group_name }}</span>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-1 text-center">
+                        <small class="text-muted d-block">Priority</small>
+                        {% if task.priority == 'high' %}
+                            <span class="badge bg-danger">High</span>
+                        {% elif task.priority == 'medium' %}
+                            <span class="badge bg-warning text-dark">Medium</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Low</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <small class="text-muted d-block">Status</small>
+                        {% if task.status == 'completed' %}
+                            <span class="badge bg-success">Completed</span>
+                        {% elif task.status == 'in_progress' %}
+                            <span class="badge bg-info">In Progress</span>
+                        {% elif task.status == 'accepted' %}
+                            <span class="badge bg-primary">Accepted</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <small class="text-muted d-block">Added</small>
+                        <span class="fw-semibold">{{ task.created_at[:10] if task.created_at else '-' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal fade" id="taskModal{{ task.id }}" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content border-0" style="border-radius:16px;overflow:hidden;">
+                <div class="modal-header py-3" style="background:linear-gradient(135deg,#1a73e8 0%,#0a4da6 100%);">
+                    <h5 class="modal-title text-white">
+                        <i class="bi bi-clipboard-check me-2"></i>{{ task.title }}
+                        {% if task.status == 'completed' %}
+                            <span class="badge bg-success ms-2">Completed</span>
+                        {% elif task.status == 'in_progress' %}
+                            <span class="badge bg-info ms-2">In Progress</span>
+                        {% elif task.status == 'accepted' %}
+                            <span class="badge bg-primary ms-2">Accepted</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark ms-2">Pending</span>
+                        {% endif %}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="p-3 rounded-3" style="background:#f8fafc;">
+                                <h6 class="text-muted mb-3"><i class="bi bi-info-circle-fill text-primary me-1"></i>Task Info</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Task ID</span>
+                                    <strong>#{{ task.id }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Created By</span>
+                                    <strong>{{ task.creator_name }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Assigned To</span>
+                                    <strong>{{ task.assigned_name or 'Unassigned' }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Group</span>
+                                    {% if task.group_name %}
+                                    <span class="badge" style="background-color:{{ task.group_color or '#6c757d' }};">{{ task.group_name }}</span>
+                                    {% else %}
+                                    <span>-</span>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Priority</span>
+                                    {% if task.priority == 'high' %}
+                                        <span class="badge bg-danger">High</span>
+                                    {% elif task.priority == 'medium' %}
+                                        <span class="badge bg-warning text-dark">Medium</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Low</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 rounded-3" style="background:#f8fafc;">
+                                <h6 class="text-muted mb-3"><i class="bi bi-clock-fill text-primary me-1"></i>Timeline</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Created</span>
+                                    <strong>{{ task.created_at[:16] if task.created_at else '-' }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Accepted</span>
+                                    <strong>{{ task.accepted_at[:16] if task.accepted_at else '-' }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Started</span>
+                                    <strong>{{ task.started_at[:16] if task.started_at else '-' }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Completed</span>
+                                    <strong>{{ task.completed_at[:16] if task.completed_at else '-' }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        {% if task.description %}
+                        <div class="col-12">
+                            <div class="p-3 rounded-3" style="background:#f0f7ff;border:1px solid #bfdbfe;">
+                                <h6 class="text-muted mb-2"><i class="bi bi-text-paragraph text-primary me-1"></i>Description</h6>
+                                <p class="mb-0">{{ task.description }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    {% if task.assigned_to == current_user.id and task.status == 'pending' %}
+                    <a href="{{ url_for('accept_task', task_id=task.id) }}" class="btn btn-success">
+                        <i class="bi bi-check2-circle me-1"></i>Accept
+                    </a>
+                    {% endif %}
+                    {% if task.assigned_to == current_user.id and task.status in ('pending', 'accepted') %}
+                    <a href="{{ url_for('start_task', task_id=task.id) }}" class="btn btn-info text-white">
+                        <i class="bi bi-play-circle me-1"></i>Start
+                    </a>
+                    {% endif %}
+                    {% if task.status != 'completed' and (task.assigned_to == current_user.id or current_user.is_admin()) %}
+                    <a href="{{ url_for('complete_task', task_id=task.id) }}" class="btn btn-success"
+                       onclick="return confirm('Mark this task as completed?')">
+                        <i class="bi bi-check-circle-fill me-1"></i>Completed
+                    </a>
+                    {% endif %}
+                    {% if task.assigned_phone and task.assigned_to %}
+                    <button type="button" class="btn btn-success" onclick="openWAShare('{{ task.assigned_phone }}', '{{ task.title }}', 'Task #{{ task.id }}', [{label:'Assigned To',value:'{{ task.assigned_name or "Unassigned" }}'},{label:'Created By',value:'{{ task.creator_name }}'},{label:'Priority',value:'{{ task.priority|title }}'},{label:'Status',value:'{{ task.status|replace("_"," ")|title }}'},{label:'Created',value:'{{ task.created_at[:10] if task.created_at else "-" }}'}], '📋')">
+                        <i class="bi bi-whatsapp me-1"></i>Share
+                    </button>
+                    {% endif %}
+                    <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-primary">
+                        <i class="bi bi-pencil-square me-1"></i>Edit
+                    </a>
+                    {% if task.status != 'completed' and task.assigned_to and task.assigned_phone %}
+                    <button type="button" class="btn btn-warning" onclick="openWAShare('{{ task.assigned_phone }}', '⚠️ URGENT REMINDER', '{{ task.title }} - Task #{{ task.id }}', [{label:'Task',value:'{{ task.title }}'},{label:'Assigned To',value:'{{ task.assigned_name or "Unassigned" }}'},{label:'Priority',value:'{{ task.priority|title }}'},{label:'Status',value:'{{ task.status|replace("_"," ")|title }}'},{label:'Created',value:'{{ task.created_at[:10] if task.created_at else "-" }}'},{label:'Action Required',value:'Pending'}], '🔔')">
+                        <i class="bi bi-whatsapp me-1"></i>Remind
+                    </button>
+                    {% elif task.status != 'completed' and task.assigned_to %}
+                    <a href="{{ url_for('send_task_reminder', task_id=task.id) }}" class="btn btn-warning"
+                       onclick="return confirm('Send urgent reminder for this task?')">
+                        <i class="bi bi-bell me-1"></i>Remind
+                    </a>
+                    {% endif %}
+                    {% if current_user.is_admin() %}
+                    <a href="{{ url_for('delete_task', task_id=task.id) }}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="card shadow-sm border-0 text-center py-5" style="border-radius:12px;">
+            <div class="card-body">
+                <i class="bi bi-list-task text-muted" style="font-size:3rem;"></i>
+                <p class="text-muted mt-2 mb-3">No tasks found</p>
+                <a href="{{ url_for('add_task') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Task</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+.list-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(26, 115, 232, 0.15) !important;
+    border-left: 4px solid #1a73e8 !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Login - TaskFlow{% endblock %}
+{% block content %}
+<section class="login-shell">
+    <div class="login-showcase">
+        <div class="login-showcase-content">
+            <div>
+                <div class="login-brand">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="AAMCO" height="48">
+                    <div>
+                        <div class="login-brand-name">TaskFlow OS</div>
+                        <div class="login-brand-copy">Airscent Arabia Manufacturing Co.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="login-task-stage" aria-hidden="true">
+                <div class="tracking-header">
+                    <div>
+                        <span class="tracking-label">Task board</span>
+                        <strong>Live operations</strong>
+                    </div>
+                    <span class="tracking-pill"><i class="bi bi-activity"></i> 84%</span>
+                </div>
+                <div class="tracking-line">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <i class="bi bi-truck"></i>
+                </div>
+                <div class="task-lanes">
+                    <div class="task-lane">
+                        <span>Pending</span>
+                        <div class="animated-task task-one">
+                            <i class="bi bi-list-check"></i>
+                            <div>
+                                <strong>Delivery note</strong>
+                                <small>Driver assigned</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="task-lane">
+                        <span>In progress</span>
+                        <div class="animated-task task-two">
+                            <i class="bi bi-arrow-repeat"></i>
+                            <div>
+                                <strong>Vehicle renewal</strong>
+                                <small>Documents checked</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="task-lane">
+                        <span>Completed</span>
+                        <div class="animated-task task-three">
+                            <i class="bi bi-check2-circle"></i>
+                            <div>
+                                <strong>Payment update</strong>
+                                <small>Ledger posted</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tracking-footer">
+                    <div class="tracking-meter"><span></span></div>
+                    <small>Tasks moving through dispatch, follow-up, and closing</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="login-card">
+        <div class="login-panel glass-panel">
+            <div class="mb-4">
+                <div class="eyebrow text-primary" style="background: var(--ui-primary-soft); color: var(--ui-primary-strong);">Welcome Back</div>
+                <h2>Sign in</h2>
+                <p class="mb-0">Use your account credentials to enter the operations dashboard.</p>
+            </div>
+            <form method="POST">
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <input type="text" name="username" class="form-control" placeholder="Enter username" required autofocus>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <input type="password" name="password" class="form-control" placeholder="Enter password" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-box-arrow-in-right"></i> Enter Workspace
+                </button>
+            </form>
+            <div class="login-footer-note">Built for clean handoffs, quick reporting, and operational control.</div>
+        </div>
+    </div>
+</section>
+{% endblock %}

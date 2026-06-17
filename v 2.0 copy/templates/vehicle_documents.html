@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Documents - {{ vehicle.vehicle_name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="bi bi-file-earmark-text text-info"></i> {{ vehicle.vehicle_name }} - Documents</h4>
+        <small class="text-muted">Plate: {{ vehicle.plate_number }}</small>
+    </div>
+    <div>
+        <a href="{{ url_for('vehicles') }}" class="btn btn-outline-secondary btn-sm me-1"><i class="bi bi-arrow-left"></i> Back</a>
+        <a href="{{ url_for('add_vehicle_document', vehicle_id=vehicle.id) }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Document</a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Document Type</th>
+                        <th>Document No.</th>
+                        <th>Issue Date</th>
+                        <th>Expiry Date</th>
+                        <th>Status</th>
+                        <th>Reminder</th>
+                        <th>Attachment</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in documents %}
+                    {% set days_left = (d.expiry_date | string) %}
+                    <tr>
+                        <td><strong>{{ d.document_type }}</strong></td>
+                        <td>{{ d.document_number or '-' }}</td>
+                        <td>{{ d.issue_date or '-' }}</td>
+                        <td>
+                            <strong>{{ d.expiry_date }}</strong>
+                        </td>
+                        <td>
+                            {% if d.expiry_date < today %}
+                            <span class="badge bg-danger"><i class="bi bi-x-circle"></i> EXPIRED</span>
+                            {% elif d.expiry_date <= (today | string) %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> Expiring Soon</span>
+                            {% else %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Valid</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ d.reminder_days }} days before</td>
+                        <td>
+                            {% if d.attachment %}
+                            <a href="{{ url_for('static', filename='uploads/' + d.attachment) }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-file-earmark"></i> View
+                            </a>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if vehicle.driver_mobile %}
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="openWAShare('{{ vehicle.driver_mobile }}', '{{ d.document_type }} Expiry Reminder', '{{ vehicle.vehicle_name }} ({{ vehicle.plate_number }})', [{label:'Vehicle',value:'{{ vehicle.vehicle_name }}'},{label:'Plate Number',value:'{{ vehicle.plate_number }}'},{label:'Document',value:'{{ d.document_type }}'},{label:'Document No',value:'{{ d.document_number or "-" }}'},{label:'Expiry Date',value:'{{ d.expiry_date }}'},{label:'Status',value:'{% if d.expiry_date < today %}Expired{% else %}Valid{% endif %}'}], '🚗')" title="Send WhatsApp Reminder">
+                                <i class="bi bi-whatsapp"></i>
+                            </button>
+                            {% endif %}
+                            <a href="{{ url_for('edit_vehicle_document', vehicle_id=vehicle.id, doc_id=d.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% if current_user.is_admin() %}
+                            <a href="{{ url_for('delete_vehicle_document', vehicle_id=vehicle.id, doc_id=d.id) }}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="text-center text-muted py-4">No documents added yet</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if documents %}
+<div class="mt-3 small text-muted">
+    <i class="bi bi-info-circle"></i> Documents are sorted by expiry date (earliest first). Expired documents are highlighted in red.
+</div>
+{% endif %}
+{% endblock %}

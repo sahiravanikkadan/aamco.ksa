@@ -1,0 +1,467 @@
+{% extends "base.html" %}
+{% block title %}Deliveries - TaskFlow{% endblock %}
+{% block content %}
+<div class="print-header">
+    {% if app_settings.get('print_show_logo', '1') == '1' %}
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+    {% endif %}
+    <h5>{{ app_settings.get('print_company_name', 'AIRSCENT ARABIA MANUFACTURING CO.') }}</h5>
+    <div class="text-muted" style="font-size:9pt;">Delivery List — Printed: {{ now().strftime('%Y-%m-%d %H:%M') if now is defined else '' }}</div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <h4 class="mb-0"><i class="bi bi-truck"></i> Delivery Tracking</h4>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-outline-secondary"><i class="bi bi-printer"></i> Print</button>
+        <a href="{{ url_for('export_deliveries', payment=payment_filter, note_status=note_filter, dn_search=dn_search, driver=driver_filter) }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Export</a>
+        <a href="{{ url_for('add_delivery') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Delivery</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm border-0 mb-4 no-print">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Delivery Note #</label>
+                <input type="text" name="dn_search" class="form-control" placeholder="Search note number..."
+                       value="{{ dn_search }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Driver</label>
+                <select name="driver" class="form-select">
+                    <option value="">All Drivers</option>
+                    {% for dr in drivers %}
+                    <option value="{{ dr.id }}" {{ 'selected' if driver_filter == dr.id|string }}>{{ dr.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Payment Status</label>
+                <select name="payment" class="form-select">
+                    <option value="">All</option>
+                    <option value="paid" {{ 'selected' if payment_filter == 'paid' }}>Paid</option>
+                    <option value="unpaid" {{ 'selected' if payment_filter == 'unpaid' }}>Unpaid</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Signed Note</label>
+                <select name="note_status" class="form-select">
+                    <option value="">All</option>
+                    <option value="received" {{ 'selected' if note_filter == 'received' }}>Received</option>
+                    <option value="pending" {{ 'selected' if note_filter == 'pending' }}>Pending</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-funnel"></i></button>
+            </div>
+            <div class="col-md-1">
+                <a href="{{ url_for('deliveries') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delivery Cards -->
+<div class="row g-3">
+    {% for d in deliveries %}
+    <div class="col-12">
+        <div class="card shadow-sm border-0 list-row" role="button" style="border-radius:12px;cursor:pointer;transition:all 0.2s;"
+             data-bs-toggle="modal" data-bs-target="#delModal{{ d.id }}">
+            <div class="card-body py-3 px-4">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3"
+                                 style="width:45px;height:45px;background:linear-gradient(135deg,#1a73e8,#0a4da6);color:white;font-size:0.85rem;flex-shrink:0;">
+                                <i class="bi bi-receipt"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold">DN# {{ d.delivery_note_number }}</div>
+                                <small class="text-muted">{{ d.customer_name }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted d-block">Driver</small>
+                        <span class="fw-semibold">{{ d.driver_name or '-' }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted d-block">Date</small>
+                        <span class="fw-semibold">{{ d.delivery_date or '-' }}</span>
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <small class="text-muted d-block">Transport</small>
+                        <span class="fw-bold text-primary">{{ '%.2f' | format(d.transportation_charge) if d.transportation_charge else '-' }}</span>
+                    </div>
+                    <div class="col-md-1 text-center">
+                        <small class="text-muted d-block">Payment</small>
+                        {% set balance = (d.transportation_charge or 0) - (d.amount_paid or 0) %}
+                        {% if d.charge_paid %}
+                            <span class="badge bg-success">Paid</span>
+                        {% elif d.amount_paid and d.amount_paid > 0 and balance > 0 %}
+                            <span class="badge bg-warning text-dark">Partial</span>
+                            <div class="small text-danger fw-bold" style="font-size:0.7rem;">Bal: {{ '%.2f'|format(balance) }}</div>
+                        {% elif d.transportation_charge > 0 %}
+                            <span class="badge bg-danger">Unpaid</span>
+                        {% else %}
+                            <span class="badge bg-secondary">N/A</span>
+                        {% endif %}
+                        {% if not d.charge_paid and d.transportation_charge > 0 %}
+                        <button class="btn btn-sm btn-success mt-1 pay-btn" style="font-size:0.7rem;padding:2px 8px;"
+                                data-id="{{ d.id }}" data-dn="{{ d.delivery_note_number }}"
+                                data-balance="{{ '%.2f'|format(balance) }}"
+                                onclick="event.stopPropagation(); openPayModal(this);">
+                            <i class="bi bi-cash"></i> Pay
+                        </button>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <small class="text-muted d-block">Signed Note</small>
+                        {% if d.signed_note_status == 'received' %}
+                            <span class="badge bg-success">Received</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal fade" id="delModal{{ d.id }}" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content border-0" style="border-radius:16px;overflow:hidden;">
+                <div class="modal-header py-3" style="background:linear-gradient(135deg,#1a73e8 0%,#0a4da6 100%);">
+                    <h5 class="modal-title text-white">
+                        <i class="bi bi-truck me-2"></i>DN# {{ d.delivery_note_number }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="p-3 rounded-3" style="background:#f8fafc;">
+                                <h6 class="text-muted mb-3"><i class="bi bi-info-circle-fill text-primary me-1"></i>Delivery Info</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Customer</span>
+                                    <strong>{{ d.customer_name }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Delivery Date</span>
+                                    <strong>{{ d.delivery_date or '-' }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Added</span>
+                                    <strong>{{ d.created_at[:10] if d.created_at else '-' }}</strong>
+                                </div>
+                                {% if d.location_from or d.location_to %}
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Route</span>
+                                    <strong>{{ d.location_from or '?' }} → {{ d.location_to or '?' }}</strong>
+                                </div>
+                                {% endif %}
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Signed Note</span>
+                                    {% if d.signed_note_status == 'received' %}
+                                        <span class="badge bg-success">Received</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% endif %}
+                                </div>
+                                {% if d.signed_note_status == 'received' %}
+                                {% if d.received_by %}
+                                <div class="d-flex justify-content-between mt-2">
+                                    <span class="text-muted">Received By</span>
+                                    <strong>{{ d.received_by }}</strong>
+                                </div>
+                                {% endif %}
+                                {% if d.note_copy_type %}
+                                <div class="d-flex justify-content-between mt-2">
+                                    <span class="text-muted">Copy Type</span>
+                                    <span class="badge {% if d.note_copy_type == 'hard_copy' %}bg-secondary{% else %}bg-info{% endif %}">
+                                        <i class="bi {% if d.note_copy_type == 'hard_copy' %}bi-file-earmark-text{% else %}bi-file-earmark-pdf{% endif %} me-1"></i>
+                                        {{ d.note_copy_type | replace('_', ' ') | title }}
+                                    </span>
+                                </div>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 rounded-3" style="background:#f8fafc;">
+                                <h6 class="text-muted mb-3"><i class="bi bi-person-badge text-primary me-1"></i>Driver Info</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Name</span>
+                                    <strong>{{ d.driver_name or '-' }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Vehicle</span>
+                                    <strong>{{ d.driver_vehicle or '-' }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Mobile</span>
+                                    <strong>{{ d.driver_mobile or '-' }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="p-3 rounded-3" style="background:#f0f7ff;border:1px solid #bfdbfe;">
+                                <h6 class="text-muted mb-3"><i class="bi bi-cash-stack text-primary me-1"></i>Payment Details</h6>
+                                {% set balance = (d.transportation_charge or 0) - (d.amount_paid or 0) %}
+                                <div class="row g-3 text-center">
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Transport Charge</small>
+                                        <div class="fw-bold fs-4 text-primary">{{ '%.2f' | format(d.transportation_charge) if d.transportation_charge else '0.00' }}</div>
+                                        <small class="text-muted">SAR</small>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Amount Paid</small>
+                                        <div class="fw-bold fs-4 text-success">{{ '%.2f' | format(d.amount_paid) if d.amount_paid else '0.00' }}</div>
+                                        <small class="text-muted">SAR</small>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Balance</small>
+                                        <div class="fw-bold fs-4 {% if balance > 0 %}text-danger{% else %}text-success{% endif %}">{{ '%.2f' | format(balance) }}</div>
+                                        <small class="text-muted">SAR</small>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Status</small>
+                                        {% if d.charge_paid %}
+                                            <div class="fw-bold fs-4 text-success">Paid</div>
+                                        {% elif d.amount_paid and d.amount_paid > 0 and balance > 0 %}
+                                            <div class="fw-bold fs-4 text-warning">Partial</div>
+                                        {% elif d.transportation_charge > 0 %}
+                                            <div class="fw-bold fs-4 text-danger">Unpaid</div>
+                                        {% else %}
+                                            <div class="fw-bold fs-4 text-muted">N/A</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Method</small>
+                                        <div class="fw-bold fs-5">{{ d.payment_method | replace('_', ' ') | title if d.payment_method else '-' }}</div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Paid Date</small>
+                                        <div class="fw-bold fs-5">{{ d.paid_date or '-' }}</div>
+                                        {% if d.paid_by %}<small class="text-muted">by {{ d.paid_by }}</small>{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    {% if d.driver_name and d.driver_mobile %}
+                    <button type="button" class="btn btn-success" onclick="openWAShare('{{ d.driver_mobile | default('') }}', 'DN# {{ d.delivery_note_number }}', '{{ d.customer_name }}', [{label:'Customer',value:'{{ d.customer_name }}'},{label:'Delivery Date',value:'{{ d.delivery_date or "-" }}'},{label:'Driver',value:'{{ d.driver_name or "-" }}'},{label:'Transport Charge',value:'{{ "%.2f"|format(d.transportation_charge) if d.transportation_charge else "0.00" }} SAR'},{label:'Amount Paid',value:'{{ "%.2f"|format(d.amount_paid) if d.amount_paid else "0.00" }} SAR'},{label:'Balance',value:'{{ "%.2f"|format((d.transportation_charge or 0) - (d.amount_paid or 0)) }} SAR'},{label:'Payment',value:'{{ "Paid" if d.charge_paid else ("Partial" if d.amount_paid and d.amount_paid > 0 else "Unpaid") if d.transportation_charge else "N/A" }}'},{label:'Signed Note',value:'{{ d.signed_note_status|title }}'}], '🚚')">
+                        <i class="bi bi-whatsapp me-1"></i>Share
+                    </button>
+                    {% if not d.charge_paid and d.transportation_charge %}
+                    <button type="button" class="btn btn-warning" onclick="openWAShare('{{ d.driver_mobile }}', '⚠️ PAYMENT REMINDER', 'DN# {{ d.delivery_note_number }} - {{ d.customer_name }}', [{label:'DN#',value:'{{ d.delivery_note_number }}'},{label:'Customer',value:'{{ d.customer_name }}'},{label:'Driver',value:'{{ d.driver_name or "-" }}'},{label:'Transport Charge',value:'{{ "%.2f"|format(d.transportation_charge) }} SAR'},{label:'Amount Paid',value:'{{ "%.2f"|format(d.amount_paid) if d.amount_paid else "0.00" }} SAR'},{label:'Balance Due',value:'{{ "%.2f"|format((d.transportation_charge or 0) - (d.amount_paid or 0)) }} SAR'},{label:'Payment Status',value:'Unpaid'}], '💰')">
+                        <i class="bi bi-whatsapp me-1"></i>Remind
+                    </button>
+                    {% endif %}
+                    {% endif %}
+                    {% if d.signed_note_status != 'received' %}
+                    <button type="button" class="btn btn-info text-white"
+                            data-id="{{ d.id }}" data-dn="{{ d.delivery_note_number }}"
+                            onclick="openReceiveModal(this);">
+                        <i class="bi bi-check2-square me-1"></i>Received
+                    </button>
+                    {% endif %}
+                    {% if not d.charge_paid and d.transportation_charge > 0 %}
+                    {% set modal_balance = (d.transportation_charge or 0) - (d.amount_paid or 0) %}
+                    <button type="button" class="btn btn-success"
+                            data-id="{{ d.id }}" data-dn="{{ d.delivery_note_number }}"
+                            data-balance="{{ '%.2f'|format(modal_balance) }}"
+                            onclick="openPayModal(this);">
+                        <i class="bi bi-cash me-1"></i>Pay
+                    </button>
+                    {% endif %}
+                    <a href="{{ url_for('edit_delivery', delivery_id=d.id) }}" class="btn btn-primary">
+                        <i class="bi bi-pencil-square me-1"></i>Edit
+                    </a>
+                    {% if current_user.is_admin() %}
+                    <a href="{{ url_for('delete_delivery', delivery_id=d.id) }}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="card shadow-sm border-0 text-center py-5" style="border-radius:12px;">
+            <div class="card-body">
+                <i class="bi bi-truck text-muted" style="font-size:3rem;"></i>
+                <p class="text-muted mt-2 mb-3">No deliveries found</p>
+                <a href="{{ url_for('add_delivery') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Delivery</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+.list-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(26, 115, 232, 0.15) !important;
+    border-left: 4px solid #1a73e8 !important;
+}
+</style>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="payModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header py-2" style="background:linear-gradient(135deg,#198754,#146c43);">
+                <h6 class="modal-title text-white"><i class="bi bi-cash-stack me-1"></i> Record Payment</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="payForm" method="POST">
+                <div class="modal-body p-3">
+                    <div class="text-center mb-3">
+                        <span class="badge bg-primary fs-6" id="payDN"></span>
+                        <div class="mt-1 text-muted small">Balance: <strong class="text-danger" id="payBalance"></strong> SAR</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Amount</label>
+                        <input type="number" step="0.01" min="0.01" name="amount_paid" id="payAmount"
+                               class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Payment Method</label>
+                        <select name="payment_method" class="form-select" required>
+                            <option value="">Select...</option>
+                            <option value="cash">Cash</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="online">Online Payment</option>
+                            <option value="credit">Credit</option>
+                            <option value="advance">Advance</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Who Paid</label>
+                        <select name="paid_by_employee" class="form-select">
+                            <option value="">Select who paid...</option>
+                            {% for u in users %}
+                            <option value="{{ u.full_name }}">{{ u.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Date</label>
+                        <input type="date" name="paid_date" class="form-control"
+                               value="{{ now().strftime('%Y-%m-%d') if now is defined else '' }}">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 justify-content-center">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check-lg"></i> Record Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Receive Signed Note Modal -->
+<div class="modal fade" id="receiveModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header py-2" style="background:linear-gradient(135deg,#0dcaf0,#0aa2c0);">
+                <h6 class="modal-title text-white"><i class="bi bi-check2-square me-1"></i> Receive Signed Note</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="receiveForm" method="POST">
+                <div class="modal-body p-3">
+                    <div class="text-center mb-3">
+                        <span class="badge bg-primary fs-6" id="receiveDN"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Received By (Employee)</label>
+                        <select name="received_by" class="form-select" required>
+                            <option value="">Select employee...</option>
+                            {% for u in users %}
+                            <option value="{{ u.full_name }}">{{ u.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Copy Type</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="note_copy_type" id="copyHard" value="hard_copy" checked>
+                                <label class="form-check-label" for="copyHard"><i class="bi bi-file-earmark-text me-1"></i>Hard Copy</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="note_copy_type" id="copySoft" value="soft_copy">
+                                <label class="form-check-label" for="copySoft"><i class="bi bi-file-earmark-pdf me-1"></i>Soft Copy</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 justify-content-center">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info btn-sm text-white"><i class="bi bi-check-lg"></i> Mark Received</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPayModal(btn) {
+    var id = btn.getAttribute('data-id');
+    var dn = btn.getAttribute('data-dn');
+    var balance = btn.getAttribute('data-balance');
+
+    document.getElementById('payDN').textContent = 'DN# ' + dn;
+    document.getElementById('payBalance').textContent = balance;
+    document.getElementById('payAmount').value = balance;
+    document.getElementById('payAmount').max = balance;
+    document.getElementById('payForm').action = '/deliveries/pay/' + id;
+
+    // Close any open detail modal
+    document.querySelectorAll('.modal.show').forEach(function(m) {
+        if (m.id !== 'payModal') {
+            var inst = bootstrap.Modal.getInstance(m);
+            if (inst) inst.hide();
+        }
+    });
+    document.querySelectorAll('.modal-backdrop').forEach(function(b) { b.remove(); });
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+
+    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('payModal'));
+    modal.show();
+}
+
+function openReceiveModal(btn) {
+    var id = btn.getAttribute('data-id');
+    var dn = btn.getAttribute('data-dn');
+
+    document.getElementById('receiveDN').textContent = 'DN# ' + dn;
+    document.getElementById('receiveForm').action = '/deliveries/received/' + id;
+
+    // Close any open detail modal
+    document.querySelectorAll('.modal.show').forEach(function(m) {
+        if (m.id !== 'receiveModal') {
+            var inst = bootstrap.Modal.getInstance(m);
+            if (inst) inst.hide();
+        }
+    });
+    document.querySelectorAll('.modal-backdrop').forEach(function(b) { b.remove(); });
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+
+    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('receiveModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

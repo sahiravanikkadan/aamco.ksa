@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}PIN Settings - AAMCO{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-shield-lock"></i> PIN Security Settings</h4>
+    <div>
+        <a href="{{ url_for('print_settings') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-printer"></i> Print</a>
+        <a href="{{ url_for('role_settings') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-shield-check"></i> Roles</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-toggle-on text-primary me-1"></i> PIN Required Actions</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <p class="text-muted small mb-3">Choose which actions require PIN verification before proceeding.</p>
+
+                    <div class="p-3 rounded-3 mb-3" style="background:#f8fafc;">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-pencil-square text-warning me-1"></i> Action Types</h6>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" name="pin_on_add" id="pinOnAdd"
+                                   {{ 'checked' if settings.get('pin_on_add', '0') == '1' }}>
+                            <label class="form-check-label" for="pinOnAdd">
+                                <strong>Adding Records</strong>
+                                <small class="text-muted d-block">Require PIN when creating new records</small>
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" name="pin_on_edit" id="pinOnEdit"
+                                   {{ 'checked' if settings.get('pin_on_edit', '0') == '1' }}>
+                            <label class="form-check-label" for="pinOnEdit">
+                                <strong>Editing Records</strong>
+                                <small class="text-muted d-block">Require PIN when editing any record</small>
+                            </label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="pin_on_delete" id="pinOnDelete"
+                                   {{ 'checked' if settings.get('pin_on_delete', '0') == '1' }}>
+                            <label class="form-check-label" for="pinOnDelete">
+                                <strong>Deleting Records</strong>
+                                <small class="text-muted d-block">Require PIN when deleting any record</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-3 mb-3" style="background:#f0f7ff;border:1px solid #bfdbfe;">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap text-primary me-1"></i> Module Sections</h6>
+                        <p class="text-muted small mb-3">Select which modules require PIN protection.</p>
+
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" name="pin_on_tasks" id="pinOnTasks"
+                                   {{ 'checked' if settings.get('pin_on_tasks', '0') == '1' }}>
+                            <label class="form-check-label" for="pinOnTasks">
+                                <i class="bi bi-list-task text-info me-1"></i> <strong>Tasks</strong>
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" name="pin_on_deliveries" id="pinOnDeliveries"
+                                   {{ 'checked' if settings.get('pin_on_deliveries', '0') == '1' }}>
+                            <label class="form-check-label" for="pinOnDeliveries">
+                                <i class="bi bi-truck text-primary me-1"></i> <strong>Deliveries</strong>
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" name="pin_on_hr" id="pinOnHR"
+                                   {{ 'checked' if settings.get('pin_on_hr', '0') == '1' }}>
+                            <label class="form-check-label" for="pinOnHR">
+                                <i class="bi bi-people-fill text-success me-1"></i> <strong>HR Module</strong>
+                            </label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="pin_on_vehicles" id="pinOnVehicles"
+                                   {{ 'checked' if settings.get('pin_on_vehicles', '0') == '1' }}>
+                            <label class="form-check-label" for="pinOnVehicles">
+                                <i class="bi bi-car-front text-warning me-1"></i> <strong>Vehicles</strong>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save PIN Settings</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-info-circle text-primary me-1"></i> How PIN Works</h6>
+            </div>
+            <div class="card-body">
+                <div class="p-3 rounded-3 mb-3" style="background:#f8fafc;">
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;flex-shrink:0;">
+                            <i class="bi bi-1-circle-fill"></i>
+                        </div>
+                        <div>
+                            <strong>Users set up their PIN</strong>
+                            <small class="text-muted d-block">Each user creates a 4-6 digit PIN from their profile menu.</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;flex-shrink:0;">
+                            <i class="bi bi-2-circle-fill"></i>
+                        </div>
+                        <div>
+                            <strong>PIN prompt on actions</strong>
+                            <small class="text-muted d-block">When a protected action is triggered, the user must enter their PIN.</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start">
+                        <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;flex-shrink:0;">
+                            <i class="bi bi-3-circle-fill"></i>
+                        </div>
+                        <div>
+                            <strong>Verified & proceed</strong>
+                            <small class="text-muted d-block">After correct PIN, the action is allowed to continue.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

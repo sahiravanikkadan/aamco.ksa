@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}HR - Employees{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-people-fill text-primary"></i> HR - Employees</h4>
+    <div>
+        <a href="{{ url_for('hr_leaves') }}" class="btn btn-outline-info btn-sm me-1"><i class="bi bi-calendar-check"></i> Leave Records</a>
+        <a href="{{ url_for('add_hr_employee') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Employee</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    {% for emp in employees %}
+    <div class="col-12">
+        <div class="card shadow-sm border-0 list-row" role="button" style="border-radius:12px;cursor:pointer;transition:all 0.2s;"
+             data-bs-toggle="modal" data-bs-target="#empModal{{ emp.id }}">
+            <div class="card-body py-3 px-4">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3"
+                                 style="width:45px;height:45px;background:linear-gradient(135deg,#1a73e8,#0a4da6);color:white;font-size:1.1rem;flex-shrink:0;">
+                                {{ emp.employee_name[:1] }}
+                            </div>
+                            <div>
+                                <div class="fw-bold">{{ emp.employee_name }}</div>
+                                <small class="text-muted">{{ emp.employee_id or '-' }}{% if emp.linked_user_name %} · Linked: {{ emp.linked_user_name }}{% endif %}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted d-block">Designation</small>
+                        <span class="fw-semibold">{{ emp.designation or '-' }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted d-block">Joining</small>
+                        <span class="fw-semibold">{{ emp.joining_date }}</span>
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <small class="text-muted d-block">Total Salary</small>
+                        <span class="fw-bold text-primary">{{ "%.2f"|format(emp.basic_salary + emp.housing_allowance + emp.transport_allowance + emp.other_allowance) }}</span>
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <small class="text-muted d-block">Ticket Amt</small>
+                        <span class="fw-bold text-warning">{{ "%.2f"|format(emp.ticket_amount) }}</span>
+                    </div>
+                    <div class="col-md-1 text-end">
+                        {% if emp.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal fade" id="empModal{{ emp.id }}" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content border-0" style="border-radius:16px;overflow:hidden;">
+                <div class="modal-header py-3" style="background:linear-gradient(135deg,#1a73e8 0%,#0a4da6 100%);">
+                    <h5 class="modal-title text-white">
+                        <i class="bi bi-person-fill me-2"></i>{{ emp.employee_name }}
+                        {% if emp.is_active %}
+                        <span class="badge bg-success ms-2">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary ms-2">Inactive</span>
+                        {% endif %}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="p-3 rounded-3" style="background:#f8fafc;">
+                                <h6 class="text-muted mb-3"><i class="bi bi-person-vcard text-primary me-1"></i>Personal Info</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Name</span>
+                                    <strong>{{ emp.employee_name }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Employee ID</span>
+                                    <strong>{{ emp.employee_id or '-' }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Designation</span>
+                                    <strong>{{ emp.designation or '-' }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Phone</span>
+                                    <strong>{{ emp.phone or '-' }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Joining Date</span>
+                                    <strong>{{ emp.joining_date }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 rounded-3" style="background:#f0f7ff;border:1px solid #bfdbfe;">
+                                <h6 class="text-muted mb-3"><i class="bi bi-cash-stack text-primary me-1"></i>Salary Breakdown</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Basic Salary</span>
+                                    <strong>{{ "%.2f"|format(emp.basic_salary) }} SAR</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Housing</span>
+                                    <strong>{{ "%.2f"|format(emp.housing_allowance) }} SAR</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Transport</span>
+                                    <strong>{{ "%.2f"|format(emp.transport_allowance) }} SAR</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Other</span>
+                                    <strong>{{ "%.2f"|format(emp.other_allowance) }} SAR</strong>
+                                </div>
+                                <hr class="my-2">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="fw-bold">Total Monthly</span>
+                                    <strong class="text-primary fs-5">{{ "%.2f"|format(emp.basic_salary + emp.housing_allowance + emp.transport_allowance + emp.other_allowance) }} SAR</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Annual Ticket</span>
+                                    <strong class="text-warning">{{ "%.2f"|format(emp.ticket_amount) }} SAR</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    {% if emp.phone %}
+                    <button type="button" class="btn btn-success" onclick="openWAShare('{{ emp.phone }}', '{{ emp.employee_name }}', '{{ emp.designation or "Employee" }}', [{label:'Employee ID',value:'{{ emp.employee_id or "-" }}'},{label:'Designation',value:'{{ emp.designation or "-" }}'},{label:'Phone',value:'{{ emp.phone or "-" }}'},{label:'Joining Date',value:'{{ emp.joining_date }}'},{label:'Total Salary',value:'{{ "%.2f"|format(emp.basic_salary + emp.housing_allowance + emp.transport_allowance + emp.other_allowance) }} SAR'},{label:'Ticket Amount',value:'{{ "%.2f"|format(emp.ticket_amount) }} SAR'}], '👤')">
+                        <i class="bi bi-whatsapp me-1"></i>Share
+                    </button>
+                    {% endif %}
+                    <a href="{{ url_for('edit_hr_employee', emp_id=emp.id) }}" class="btn btn-primary">
+                        <i class="bi bi-pencil-square me-1"></i>Edit
+                    </a>
+                    {% if current_user.is_admin() %}
+                    <a href="{{ url_for('delete_hr_employee', emp_id=emp.id) }}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="card shadow-sm border-0 text-center py-5" style="border-radius:12px;">
+            <div class="card-body">
+                <i class="bi bi-people text-muted" style="font-size:3rem;"></i>
+                <p class="text-muted mt-2 mb-3">No employees added yet</p>
+                <a href="{{ url_for('add_hr_employee') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Employee</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+.list-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(26, 115, 232, 0.15) !important;
+    border-left: 4px solid #1a73e8 !important;
+}
+</style>
+{% endblock %}

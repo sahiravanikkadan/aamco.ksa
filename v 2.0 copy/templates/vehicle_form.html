@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if vehicle else 'Add' }} Vehicle{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-car-front text-primary"></i> {{ 'Edit' if vehicle else 'Add' }} Vehicle</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Vehicle Name <span class="text-danger">*</span></label>
+                            <input type="text" name="vehicle_name" class="form-control" value="{{ vehicle.vehicle_name if vehicle else '' }}" required placeholder="e.g. Toyota Hilux 2024">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Plate Number <span class="text-danger">*</span></label>
+                            <input type="text" name="plate_number" class="form-control" value="{{ vehicle.plate_number if vehicle else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Vehicle Type</label>
+                            <select name="vehicle_type" class="form-select">
+                                <option value="">-- Select --</option>
+                                {% for t in ['Sedan', 'SUV', 'Pickup', 'Van', 'Truck', 'Bus', 'Motorcycle', 'Other'] %}
+                                <option value="{{ t }}" {% if vehicle and vehicle.vehicle_type == t %}selected{% endif %}>{{ t }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Driver Name</label>
+                            <input type="text" name="driver_name" class="form-control" value="{{ vehicle.driver_name if vehicle else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Link to Driver</label>
+                            <select name="driver_id" class="form-select">
+                                <option value="">-- None --</option>
+                                {% for d in drivers %}
+                                <option value="{{ d.id }}" {% if vehicle and vehicle.driver_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% if vehicle %}
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Status</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="isActive" {% if vehicle.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="isActive">Active</label>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> {{ 'Update' if vehicle else 'Add' }} Vehicle</button>
+                        <a href="{{ url_for('vehicles') }}" class="btn btn-secondary ms-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

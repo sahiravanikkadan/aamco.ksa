@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Leave Salary Formula Settings{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow border-0" style="border-radius:16px;overflow:hidden;">
+            <div class="card-header py-3" style="background: linear-gradient(135deg, #1a73e8 0%, #0a4da6 100%);">
+                <h5 class="mb-0 text-white"><i class="bi bi-calculator me-2"></i>Leave Salary Formula Settings</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <!-- Default Calc Mode -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold"><i class="bi bi-toggle-on text-primary me-1"></i>Default Calculation Mode</label>
+                        <select name="leave_calc_mode" class="form-select">
+                            <option value="auto" {{ 'selected' if settings.get('leave_calc_mode', 'auto') == 'auto' }}>Auto Calculation</option>
+                            <option value="manual" {{ 'selected' if settings.get('leave_calc_mode') == 'manual' }}>Manual Entry</option>
+                        </select>
+                        <small class="text-muted">Choose whether new leave records use auto-calculation or manual entry by default. Can be changed per record.</small>
+                    </div>
+
+                    <!-- Divisor -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold"><i class="bi bi-hash text-primary me-1"></i>Salary Divisor (Days)</label>
+                        <select name="leave_salary_divisor" class="form-select">
+                            <option value="365" {{ 'selected' if settings.get('leave_salary_divisor', '365') == '365' }}>365 (Yearly)</option>
+                            <option value="360" {{ 'selected' if settings.get('leave_salary_divisor') == '360' }}>360</option>
+                            <option value="30" {{ 'selected' if settings.get('leave_salary_divisor') == '30' }}>30 (Monthly)</option>
+                        </select>
+                        <small class="text-muted">Formula: Daily Salary = Total Salary ÷ <strong>Divisor</strong></small>
+                    </div>
+
+                    <!-- Salary Components -->
+                    <div class="p-3 rounded-3 mb-4" style="background:#f0f4f8;border:1px dashed #cbd5e1;">
+                        <h6 class="text-muted mb-3"><i class="bi bi-list-check me-1"></i>Include Salary Components</h6>
+                        <p class="text-muted small mb-3">Select which salary components are included in the leave salary calculation.</p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="leave_include_basic" id="incBasic"
+                                           {{ 'checked' if settings.get('leave_include_basic', '1') == '1' }}>
+                                    <label class="form-check-label" for="incBasic">Basic Salary</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="leave_include_housing" id="incHousing"
+                                           {{ 'checked' if settings.get('leave_include_housing', '1') == '1' }}>
+                                    <label class="form-check-label" for="incHousing">Housing Allowance</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="leave_include_transport" id="incTransport"
+                                           {{ 'checked' if settings.get('leave_include_transport', '1') == '1' }}>
+                                    <label class="form-check-label" for="incTransport">Transport Allowance</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="leave_include_other" id="incOther"
+                                           {{ 'checked' if settings.get('leave_include_other', '1') == '1' }}>
+                                    <label class="form-check-label" for="incOther">Other Allowance</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="leave_include_ticket" id="incTicket"
+                                           {{ 'checked' if settings.get('leave_include_ticket', '1') == '1' }}>
+                                    <label class="form-check-label" for="incTicket">Travel / Ticket Allowance</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formula Preview -->
+                    <div class="p-3 rounded-3 mb-4" style="background:#f0f7ff;border:1px solid #bfdbfe;">
+                        <h6 class="text-muted mb-2"><i class="bi bi-info-circle text-primary me-1"></i>Formula Preview</h6>
+                        <div class="small">
+                            <strong>Daily Salary</strong> = (Basic + Housing + Transport + Other) ÷ {{ settings.get('leave_salary_divisor', '365') }}<br>
+                            <strong>Leave Salary</strong> = Daily Salary × Attendance Days<br>
+                            <strong>Travel Allowance</strong> = (Ticket Amount ÷ {{ settings.get('leave_salary_divisor', '365') }}) × Attendance Days<br>
+                            <strong>Total Payout</strong> = Leave Salary + Travel Allowance
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg px-4"><i class="bi bi-check-lg"></i> Save Settings</button>
+                        <a href="{{ url_for('hr_leaves') }}" class="btn btn-outline-secondary btn-lg px-4">Back to Vacations</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

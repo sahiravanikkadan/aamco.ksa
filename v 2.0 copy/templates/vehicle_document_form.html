@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if document else 'Add' }} Document - {{ vehicle.vehicle_name }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-file-earmark-plus text-info"></i> {{ 'Edit' if document else 'Add' }} Document
+                    <small class="text-muted">- {{ vehicle.vehicle_name }} ({{ vehicle.plate_number }})</small>
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Document Type <span class="text-danger">*</span></label>
+                            <select name="document_type" class="form-select" required>
+                                <option value="">-- Select --</option>
+                                {% for t in ['Istimara (Registration)', 'Insurance', 'Inspection (Fahas)', 'Driving License', 'Vehicle License', 'Road Permit', 'GPS Certificate', 'Other'] %}
+                                <option value="{{ t }}" {% if document and document.document_type == t %}selected{% endif %}>{{ t }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Document Number</label>
+                            <input type="text" name="document_number" class="form-control" value="{{ document.document_number if document else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Issue Date</label>
+                            <input type="date" name="issue_date" class="form-control" value="{{ document.issue_date if document else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Expiry Date <span class="text-danger">*</span></label>
+                            <input type="date" name="expiry_date" class="form-control" value="{{ document.expiry_date if document else '' }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Remind Before (days)</label>
+                            <input type="number" name="reminder_days" class="form-control" value="{{ document.reminder_days if document else 30 }}" min="1">
+                            <small class="text-muted">Days before expiry to show alert</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Attachment (Image/PDF)</label>
+                            <input type="file" name="attachment" class="form-control" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf">
+                            {% if document and document.attachment %}
+                            <small class="text-muted mt-1 d-block">
+                                Current: <a href="{{ url_for('static', filename='uploads/' + document.attachment) }}" target="_blank">{{ document.attachment }}</a>
+                            </small>
+                            {% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Notes</label>
+                            <textarea name="notes" class="form-control" rows="2">{{ document.notes if document else '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> {{ 'Update' if document else 'Add' }} Document</button>
+                        <a href="{{ url_for('vehicle_documents', vehicle_id=vehicle.id) }}" class="btn btn-secondary ms-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

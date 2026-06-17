@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Driver Ledger Report - TaskFlow{% endblock %}
+{% block content %}
+<div class="print-header">
+    {% if app_settings.get('print_show_logo', '1') == '1' %}
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+    {% endif %}
+    <h5>{{ app_settings.get('print_company_name', 'AIRSCENT ARABIA MANUFACTURING CO.') }}</h5>
+    <div class="text-muted" style="font-size:9pt;">Driver Ledger Report — Printed: {{ now().strftime('%Y-%m-%d %H:%M') if now is defined else '' }}</div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <h4 class="mb-0"><i class="bi bi-journal-text"></i> Delivery Person Ledger</h4>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-outline-secondary"><i class="bi bi-printer"></i> Print</button>
+        <a href="{{ url_for('deliveries') }}" class="btn btn-outline-primary"><i class="bi bi-arrow-left"></i> Deliveries</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm border-0 mb-4 no-print">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Select Driver</label>
+                <select name="driver" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- Select Driver --</option>
+                    {% for dr in drivers %}
+                    <option value="{{ dr.id }}" {{ 'selected' if driver_filter == dr.id|string }}>{{ dr.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">From Date</label>
+                <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">To Date</label>
+                <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-funnel"></i></button>
+            </div>
+            <div class="col-md-1">
+                <a href="{{ url_for('report_driver_ledger') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if driver_info %}
+<!-- Driver Info Card -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-1 text-center">
+                <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto"
+                     style="width:55px;height:55px;background:linear-gradient(135deg,#1a73e8,#0a4da6);color:white;font-size:1.2rem;">
+                    <i class="bi bi-person-badge"></i>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <h5 class="mb-0">{{ driver_info.name }}</h5>
+                <small class="text-muted">{{ driver_info.mobile or 'No mobile' }}</small>
+                {% if driver_info.care_of %}<br><small class="text-muted">C/O: {{ driver_info.care_of }}</small>{% endif %}
+            </div>
+            <div class="col-md-2">
+                <small class="text-muted d-block">Vehicle</small>
+                <span class="fw-semibold">{{ driver_info.vehicle_no or '-' }}</span>
+                {% if driver_info.vehicle_type %}<br><small class="text-muted">{{ driver_info.vehicle_type }}</small>{% endif %}
+            </div>
+            <div class="col-md-2 text-center">
+                <small class="text-muted d-block">Total Deliveries</small>
+                <div class="fw-bold fs-4 text-primary">{{ ledger | length }}</div>
+            </div>
+            <div class="col-md-2 text-center">
+                <small class="text-muted d-block">Total Charges</small>
+                <div class="fw-bold fs-4 text-primary">{{ '%.2f' | format(total_charge) }}</div>
+                <small class="text-muted">SAR</small>
+            </div>
+            <div class="col-md-2 text-center">
+                <small class="text-muted d-block">Balance Due</small>
+                <div class="fw-bold fs-4 {% if (total_charge - total_paid) > 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ '%.2f' | format(total_charge - total_paid) }}
+                </div>
+                <small class="text-muted">SAR</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ledger Table -->
+<div class="card shadow-sm border-0" style="border-radius:12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead style="background:#f8fafc;">
+                    <tr>
+                        <th class="ps-4">#</th>
+                        <th>Date</th>
+                        <th>DN#</th>
+                        <th>Customer</th>
+                        <th>Route</th>
+                        <th class="text-end">Charge</th>
+                        <th class="text-end">Paid</th>
+                        <th class="text-end">Balance</th>
+                        <th class="text-center">Payment</th>
+                        <th class="text-center">Signed Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set running_balance = {'val': 0} %}
+                    {% for d in ledger %}
+                    {% set bal = (d.transportation_charge or 0) - (d.amount_paid or 0) %}
+                    {% if running_balance.update({'val': running_balance.val + bal}) %}{% endif %}
+                    <tr>
+                        <td class="ps-4">{{ loop.index }}</td>
+                        <td>{{ d.delivery_date or '-' }}</td>
+                        <td><span class="badge bg-primary">{{ d.delivery_note_number }}</span></td>
+                        <td>{{ d.customer_name }}</td>
+                        <td>
+                            {% if d.location_from or d.location_to %}
+                            <small>{{ d.location_from or '?' }} → {{ d.location_to or '?' }}</small>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td class="text-end">{{ '%.2f' | format(d.transportation_charge or 0) }}</td>
+                        <td class="text-end text-success">{{ '%.2f' | format(d.amount_paid or 0) }}</td>
+                        <td class="text-end {% if bal > 0 %}text-danger fw-bold{% else %}text-success{% endif %}">{{ '%.2f' | format(bal) }}</td>
+                        <td class="text-center">
+                            {% if d.charge_paid %}
+                                <span class="badge bg-success">Paid</span>
+                            {% elif d.amount_paid and d.amount_paid > 0 %}
+                                <span class="badge bg-warning text-dark">Partial</span>
+                            {% elif d.transportation_charge > 0 %}
+                                <span class="badge bg-danger">Unpaid</span>
+                            {% else %}
+                                <span class="badge bg-secondary">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if d.signed_note_status == 'received' %}
+                                <span class="badge bg-success">Received</span>
+                                {% if d.received_by %}<br><small class="text-muted">{{ d.received_by }}</small>{% endif %}
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="bi bi-journal-text" style="font-size:2rem;"></i>
+                            <p class="mt-2 mb-0">No deliveries found for this driver</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if ledger %}
+                <tfoot style="background:#e8f5e9;">
+                    <tr class="fw-bold">
+                        <td colspan="5" class="ps-4 text-end">Totals:</td>
+                        <td class="text-end">{{ '%.2f' | format(total_charge) }}</td>
+                        <td class="text-end text-success">{{ '%.2f' | format(total_paid) }}</td>
+                        <td class="text-end {% if (total_charge - total_paid) > 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ '%.2f' | format(total_charge - total_paid) }} SAR
+                        </td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+
+{% elif not driver_filter %}
+<div class="card shadow-sm border-0 text-center py-5" style="border-radius:12px;">
+    <div class="card-body">
+        <i class="bi bi-person-badge text-muted" style="font-size:3rem;"></i>
+        <p class="text-muted mt-2 mb-0">Select a driver to view their ledger</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
